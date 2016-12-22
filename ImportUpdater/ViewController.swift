@@ -14,35 +14,36 @@ class ViewController: NSViewController {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
-        let allSources = try! NSString(contentsOfFile: "/Users/annotunzdy/Desktop/sources.txt", encoding: NSUTF8StringEncoding).componentsSeparatedByString("\n")
-        let allHeaders = try! NSString(contentsOfFile: "/Users/annotunzdy/Desktop/headers.txt", encoding: NSUTF8StringEncoding).componentsSeparatedByString("\n").map({ (fullPath) -> [String] in
+        let allSources = try! NSString(contentsOfFile: "/Users/annotunzdy/Desktop/sources.txt", encoding: String.Encoding.utf8.rawValue).components(separatedBy: "\n")
+        let allHeaders = try! NSString(contentsOfFile: "/Users/annotunzdy/Desktop/headers.txt", encoding: String.Encoding.utf8.rawValue).components(separatedBy: "\n").map({ (fullPath) -> [String] in
             let components = NSString(string: fullPath).pathComponents
             var frameworkName = components[1]
-            frameworkName = frameworkName.stringByReplacingOccurrencesOfString("-", withString: "_")
-            frameworkName = frameworkName.stringByReplacingOccurrencesOfString("+", withString: "_")
+            frameworkName = frameworkName.replacingOccurrences(of: "-", with: "_")
+            frameworkName = frameworkName.replacingOccurrences(of: "+", with: "_")
             return [frameworkName, components[components.count - 1]]
         })
         
         for sourcePath in allSources {
-            let fullPath = NSString(string: "/Users/annotunzdy/Documents/Proj").stringByAppendingPathComponent(sourcePath)
+            let fullPath = sourcePath
             NSLog("Search: %@", fullPath)
-            var sourceCode = try! NSString(contentsOfFile: fullPath, encoding: NSUTF8StringEncoding)
+            var sourceCode = try! NSString(contentsOfFile: fullPath, encoding: String.Encoding.utf8.rawValue)
             var changed = false
             for headerInfo in allHeaders {
+                NSLog("Check: %@/%@", headerInfo[0], headerInfo[1])
                 let oldImport1 = NSString(format: "#import \"%@\"", headerInfo[1]) as String
                 let oldImport2 = NSString(format: "#import <%@/%@>", headerInfo[0], headerInfo[1]) as String
                 let newImport = NSString(format: "#import \"%@/%@\"", headerInfo[0], headerInfo[1]) as String
-                var newSourceCode = sourceCode.stringByReplacingOccurrencesOfString(oldImport1, withString: newImport)
-                newSourceCode = sourceCode.stringByReplacingOccurrencesOfString(oldImport2, withString: newImport)
-                if (sourceCode != newSourceCode) {
+                var newSourceCode = sourceCode.replacingOccurrences(of: oldImport1, with: newImport)
+                newSourceCode = newSourceCode.replacingOccurrences(of: oldImport2, with: newImport)
+                if (sourceCode as String != newSourceCode) {
                     changed = true
-                    sourceCode = newSourceCode
+                    sourceCode = newSourceCode as NSString
                 }
             }
             if (changed) {
-                let data = sourceCode.dataUsingEncoding(NSUTF8StringEncoding)
-                try! NSFileManager.defaultManager().removeItemAtPath(fullPath)
-                NSFileManager.defaultManager().createFileAtPath(fullPath, contents: data, attributes: nil)
+                let data = sourceCode.data(using: String.Encoding.utf8.rawValue)
+                try! FileManager.default.removeItem(atPath: fullPath)
+                FileManager.default.createFile(atPath: fullPath, contents: data, attributes: nil)
                 NSLog("Changed")
             } else {
                 NSLog("Unchanged")
@@ -50,7 +51,7 @@ class ViewController: NSViewController {
         }
     }
 
-    override var representedObject: AnyObject? {
+    override var representedObject: Any? {
         didSet {
         // Update the view, if already loaded.
         }
